@@ -1,0 +1,5 @@
+user_icon (small): https://www.iconpacks.net/free-icon/user-information-290.html
+cart: https://www.iconpacks.net/free-icon/shopping-cart-3041.html
+logout: https://www.iconpacks.net/free-icon/exit-logout-2857.html
+game icon: https://www.flaticon.com/free-icon/pc-game_5804809 (before edit)
+user icon: https://www.flaticon.com/free-icon/user_666201

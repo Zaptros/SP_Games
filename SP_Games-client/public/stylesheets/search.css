@@ -1,0 +1,16 @@
+div#form {
+    max-width: 1000px;
+    margin: auto;
+}
+
+a.h3 {
+    text-decoration: none;
+}
+
+/* div.game-info {
+    flex: 50%;
+} */
+
+/* div.game-info > p {
+    width: 50%;
+} */

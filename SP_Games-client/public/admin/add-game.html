@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>SP Games</title>
+    <link rel="icon" href="/images/game_icon_small.png">
+
+    <!-- load bootstrap css -->
+    <!-- https://getbootstrap.com/docs/5.3/getting-started/download/ -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+
+    <link href="../stylesheets/general.css" rel="stylesheet">
+    <link href="../stylesheets/admin.css" rel="stylesheet">
+
+</head>
+<body data-bs-theme="dark"> <!-- for dark mode -->
+    <nav class="navbar navbar-expand-lg bg-dark p-2 bg-gradient" id="nav">
+    </nav>
+    <div class="container bg-dark text-center">
+        <div id="form"> 
+            <form class="align-middle text-center" id="addgame">
+                <h1 class="mb-5 text-center">Add Game</h1>
+                <div class="form-group mb-3 row ">
+                    <label class="col-3" for="title">Title</label>
+                    <div class="col-9">
+                        <input type="text" class="form-control shadow-none" id="title" required>
+                    </div>
+                </div>
+                <div class="form-group mb-3 row">
+                    <label class="col-3" for="description">Description</label>
+                    <div class="col-9">
+                        <textarea class="form-control shadow-none" id="description" required></textarea>
+                    </div>
+                </div>
+                <div class="form-group mb-3 row">
+                    <label class="col-3" for="floatingInput">Platforms</label>
+                    <div class="col-9 border-bottom" id="platform-select">
+                        <select class="form-select shadow-none" id="platform-list">
+                            <option value="" selected>Add a platform</option>
+                        </select>
+                        <table id="platforms-div" class="table mt-3">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Platform</th>
+                                    <th scope="col">Price</th>
+                                    <th scope="col">Remove</th>
+                                </tr>
+                            </thead>
+                            <tbody id="platform-div-body">
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="form-group mb-3 row">
+                    <label class="col-3" for="floatingInput">Categories</label>
+                    <div class="col-9 row row-cols-4" id="category-div">
+                    </div>
+                </div>
+                <div class="form-group mb-3 row">
+                    <label class="col-3" for="year">Game year</label>
+                    <div class="col-3">
+                        <input type="number" class="form-control shadow-none" id="year" step="1" min="1900" max="2100" required>
+                    </div>
+                    <label class="col-3" for="image">Game image (optional)</label>
+                    <div class="col-3">
+                        <input type="file" class="form-control shadow-none" id="image" accept=".jpg" name="image">
+                    </div>
+                    <small class="col-6 offset-6">image should be a jpg under 1 mb</small>
+                </div>
+                <p id="gameadd-result-text"></p>
+                <div class="text-center d-grid">
+                    <button type="submit" class="btn btn-lg btn-primary mb-3" id="addgame-button">Add Game</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- jquery -->
+    <!-- https://releases.jquery.com/ -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <!-- ajax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js" integrity="sha512-uMtXmF28A2Ab/JJO2t/vYhlaa/3ahUOgj1Zf27M5rOo8/+fcTUVH0/E0ll68njmjrLqOBjXM3V9NiPFL5ywWPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- own scripts  -->
+    <script src="../scripts/isLoggedIn.js"></script>
+    <script src="../scripts/hasInvalidInput.js"></script>
+    <script>
+        let backendUrl = 'http://localhost:8081'
+        $(document).ready(() => {
+            axios.get(backendUrl + '/category')
+                .then((response) => {
+                    console.log(response)
+                    let categoriesHtml = '';
+                    response.data.forEach(cat => {
+                        categoriesHtml += `
+                        <div>
+                            <input class="form-check-input category-check" type="checkbox" value="${cat.categoryid}" id="${cat.catname}">
+                            <label class="form-check-label" for="${cat.catname}">
+                                ${cat.catname}
+                            </label>
+                        </div>
+                        `
+                    });
+                    $('#category-div').append(categoriesHtml);
+                })
+                .catch((error) => {
+                    console.log(error)
+                })
+            axios.get(backendUrl + '/platform')
+                .then((response) => {
+                    console.log(response)
+                    let platformOptions = '';
+                    response.data.forEach(platform => {
+                        platformOptions += `
+                        <option value="${platform.platformid}">${platform.platformname}</option>
+                        `
+                    });
+                    $('#platform-list').append(platformOptions);
+                })
+                .catch((error) => {
+                    console.log(error)
+                })
+            // add platform when dropdown is used
+            $('#platform-list').on("change", (event) => {
+                // console.log(event)
+                let selectPlatformId = event.target.value;
+                console.log(selectPlatformId)
+                if (selectPlatformId != '') {
+                    let selectPlatformName = $(`#platform-list option[value=${selectPlatformId}]`).text();
+                    console.log($('#platforms-div tbody'))
+                    $('tbody').append(`
+                        <tr data-platform-id="${selectPlatformId}" class="platform-info">
+                            <th scope="row">${selectPlatformName}</th>
+                            <td>
+                                <input type="number" class="form-control form-control-sm shadow-none platform-price" min="0" max="9999" step="0.01" required>
+                            </td>
+                            <td>
+                                <button type="button" class="col-3 btn btn-sm btn-secondary platform-remove text-center"> - </button>
+                            </td>
+                        </tr>
+                    `)
+                    $(`#platform-list option[value=${selectPlatformId}]`).prop('disabled',true)
+                    $(`#platform-list option[value='']`).prop('selected',true)
+
+                }
+            })
+            // remove platform from table
+            $(document).on('click', '.platform-remove', function (event) {
+                let removePlatID = this.closest('tr').attributes['data-platform-id'].value;
+                this.closest('tr').remove();
+                $(`#platform-list option[value=${removePlatID}]`).prop('disabled',false);
+            })
+
+            // add game
+            $('#addgame-button').click((event) => {
+                event.preventDefault();
+                $('#platform-select').removeClass(['border', 'border-danger'])
+                $('#category-div').removeClass(['border', 'border-danger'])
+
+                $('gameadd-result-text').text(' ');
+                // general validator
+                if (hasInvalidInput("#addgame")) {
+                    return;
+                }
+                let platformIds = [];
+                let prices = [];
+                $('tr.platform-info').each(function() {
+                    platformIds.push(this.attributes['data-platform-id'].value)
+                });
+                $('input.platform-price').each(function() {
+                    prices.push(this.value)
+                });
+                if (platformIds.length == 0 || prices.length == 0 ) {
+                    $('#platform-select').append('<small class="text-danger">Add at least 1 platform</small>')
+                    // hasInvalidInput() will remove this next time button is pressed
+                    $('#platform-list').addClass(['border', 'border-danger'])
+                    return
+                }
+                if (platformIds.length != prices.length) {
+                    $('#platform-select').append('<small class="text-danger">Must have same number of platform and prices</small>')
+                    return
+                }
+
+                let categoryIds = []
+                $('.category-check:checked').each(function() {
+                    categoryIds.push(this.value);
+                })
+                if (categoryIds.length == 0) {
+                    $('#category-div').append('<small class="text-danger col-12">Select at least 1 category</small>')
+                    // hasInvalidInput() will remove this next time button is pressed
+                    $('#category-div').addClass(['border', 'border-danger'])
+                    return
+                }
+                console.log(categoryIds)
+                $('#image').prop('files')[0] ?  image = $('#image').prop('files') :  image = null;
+                console.log(image)
+                let reqBody = new FormData(document.querySelector("form")) // get image
+                // https://stackabuse.com/axios-multipart-form-data-sending-file-through-a-form-with-javascript/
+                reqBody.append('title', $('#title').val())
+                reqBody.append('description', $('#description').val())
+                reqBody.append('year', $('#year').val())
+                reqBody.append('platformid', platformIds.join(','))
+                reqBody.append('price', prices.join(','))
+                reqBody.append('categoryid', categoryIds.join(','))
+
+                let header = {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: "Bearer " + localStorage.getItem('token')
+                }
+                axios.post(backendUrl + '/game/', reqBody, { 
+                    headers: header
+                })
+                    .then((response) => {
+                        console.log(response);
+                        $('#gameadd-result-text').text('Game created').addClass('text-success').removeClass('text-danger');
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        try {
+                            $('#gameadd-result-text').text(error.response.data.message).addClass('text-danger').removeClass('text-success');
+                        } catch {
+                            $('#gameadd-result-text').text("failed to add game").addClass('text-danger').removeClass('text-success');
+                        }
+                    })
+            })
+        })
+    </script>
+    
+    <script src="../scripts/nav.js"></script>
+    <script src="../scripts/logout.js"></script>
+</body>
+</html>

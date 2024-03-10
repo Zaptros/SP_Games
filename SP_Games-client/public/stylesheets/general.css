@@ -1,0 +1,13 @@
+@charset "utf-8";
+
+body {
+    background-image: url(../images/background.png); /* source: https://pixabay.com/vectors/colorful-prismatic-chromatic-2099182/ */
+    background-color: rgb(1,1,1); 
+    /* space inside the hexagons in the bg is transpartent, so colour can be added behind it */
+    /* height: 100vh; */
+}
+
+.container {
+    min-height:100vh;
+    height:auto;
+}

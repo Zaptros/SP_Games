@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>SP Games</title>
+    <link rel="icon" href="/images/game_icon_small.png">
+
+    <!-- load bootstrap css -->
+    <!-- https://getbootstrap.com/docs/5.3/getting-started/download/ -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+
+    <link href="/stylesheets/general.css" rel="stylesheet">
+    <link href="/stylesheets/register.css" rel="stylesheet">
+</head>
+<body data-bs-theme="dark"> <!-- for dark mode -->
+    <nav class="navbar navbar-expand-lg bg-dark p-2 bg-gradient" id="nav">
+    </nav>
+    <div class="container bg-dark">
+        <div id="form"> 
+            <form class="align-middle" id="register">
+                <h1 class="mb-5 text-center">Create Account</h1>
+                <div class="form-group form-floating mb-3">
+                    <input type="text" class="form-control shadow-none" id="username" required>
+                    <label for="floatingInput">Username *</label>
+                </div>
+                <div class="form-group form-floating mb-3">
+                    <input type="email" class="form-control shadow-none" id="email" required> 
+                    <label for="floatingInput">Email address *</label>
+                </div>
+                <div class="form-group form-floating mb-3">
+                    <input type="text" class="form-control shadow-none" id="pfp_url">
+                    <label for="floatingInput">Profile Pic URL</label>
+                </div>
+                <div class="form-group form-floating mb-3">
+                    <input type="password" class="form-control shadow-none" id="password" required>
+                    <label for="floatingInput">Password *</label>
+                </div>
+                <div class="form-group form-floating mb-3">
+                    <input type="password" class="form-control shadow-none" id="password2" required>
+                    <label for="floatingInput">Retype Password *</label>
+                </div>
+                <p class="text-danger" id="register-result-text"></p>
+                <p>* indicates required</p>
+                <div class="text-center d-grid">
+                    <button type="submit" class="btn btn-lg btn-primary mb-3" id="register-button">Register</button>
+                    <p>Already have an account? <a href="/login.html">Log in</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- jquery -->
+    <!-- https://releases.jquery.com/ -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <!-- ajax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js" integrity="sha512-uMtXmF28A2Ab/JJO2t/vYhlaa/3ahUOgj1Zf27M5rOo8/+fcTUVH0/E0ll68njmjrLqOBjXM3V9NiPFL5ywWPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- own scripts  -->
+    <script src="./scripts/hasInvalidInput.js"></script>
+    <script>
+        $(document).ready(() => {
+            $("#register-button").click((event) => {
+                event.preventDefault();
+                if (hasInvalidInput("#register")) {
+                    return;
+                }
+                if ($("#password").val() !== $("#password2").val()) {
+                    $("#register-result-text").text("Passwords do not match");
+                    return;
+                }
+                let reqBody = {
+                    username: $("#username").val(), 
+                    email: $("#email").val(), 
+                    password: $("#password").val(), 
+                    profile_pic_url: $("#pfp_url").val()
+                }
+                axios.post('http://localhost:8081/users', reqBody)
+                    .then((response) => {
+                        if (!response.data) {
+                            return Promise.reject("Failed to create account");
+                        }
+                        console.log(response);
+                        $('#successPopup').modal('show'); 
+                    })
+                    .catch((error) => {
+                        try {
+                            $("#register-result-text").text(error.response.data.message);
+                        } catch { // if error is not from response
+                            $("#register-result-text").text("Failed to create account");
+                        }
+                    })
+            })
+            // when popup is closed rediirect to login
+            $("#successPopup").on('hidden.bs.modal', function(event) {
+                console.log('a');
+                window.location.href = "/login.html"
+            })
+        })
+        
+    </script>
+    <script src="./scripts/nav.js"></script>
+    <script src="./scripts/logout.js"></script>
+
+    <div class="modal fade" id="successPopup" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Success</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            <div class="modal-body">
+                Account made successfully!
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

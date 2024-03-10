@@ -1,0 +1,11 @@
+.game-info {
+    background: rgba(204, 204, 204, 0.8);
+}
+
+.carousel-caption:first-of-type {
+    background: rgba(204, 204, 204, 0.4);
+    top: 0;
+    bottom: auto;
+}
+
+

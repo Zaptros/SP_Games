@@ -1,0 +1,28 @@
+.container {
+    /* min-height: 60vh; */
+    height: auto;
+}
+
+.container div.bg-secondary {
+    max-width: 70%;
+    width: auto;
+    height: auto;
+    margin: auto;
+
+    border-radius: 20px;
+}
+
+#homepage-0, #homepage-1 {
+    position: relative;
+    top: 50px;
+}
+
+#homepage-2 {
+    position: relative;
+    top: 15vh;
+}
+
+ul {
+    text-align: center;
+    list-style-position: inside;
+}

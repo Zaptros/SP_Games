@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>SP Games</title>
+    <link rel="icon" href="/images/game_icon_small.png">
+
+    <!-- load bootstrap css -->
+    <!-- https://getbootstrap.com/docs/5.3/getting-started/download/ -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+
+    <!-- for star ratings https://fontawesome.com/ -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <link href="/stylesheets/general.css" rel="stylesheet">
+    <link href="/stylesheets/game.css" rel="stylesheet">
+</head>
+<body data-bs-theme="dark"> <!-- for dark mode -->
+    <nav class="navbar navbar-expand-lg bg-dark p-2 bg-gradient" id="nav">
+    </nav>
+    <div class="container bg-dark text-center">
+        <div class="row g-2" id="game-info">
+            <h1 id="game-title" class="col-12"></h1>
+        </div>
+        <div class="row gap-4 p-3 d-flex justify-content-center" id="game-review">
+
+        </div>
+    </div>
+
+    <!-- jquery -->
+    <!-- https://releases.jquery.com/ -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <!-- ajax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js" integrity="sha512-uMtXmF28A2Ab/JJO2t/vYhlaa/3ahUOgj1Zf27M5rOo8/+fcTUVH0/E0ll68njmjrLqOBjXM3V9NiPFL5ywWPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- own scripts  -->
+    <script src="/scripts/hasInvalidInput.js"></script>
+    <script>
+        let backendUrl = 'http://localhost:8081'
+        urlParams = window.location.pathname.split("/");
+        if (urlParams.length != 4) { // illegal url
+            window.location.href = "/"
+        }
+        let gameid = urlParams[2];
+        let platformname = decodeURI(urlParams[3]);
+        $(document).ready(() => {
+            // add game info and cart button
+            let gameInfo = false;
+            
+            let token = localStorage.getItem('token');
+            let header = {
+                Authorization: "Bearer " + token
+            }
+            let RemoveCartBtn = `<button type="submit" class="btn btn-danger m-1" id="cart-remove">Remove from cart</button>`;
+            let AddCartBtn = `<button type="submit" class="btn btn-primary m-1" id="cart-add">Add to cart</button>`;
+
+            let emptyStar = '<i class="fa fa-star"></i>'
+            let filledStar = '<i class="fa fa-star text-warning"></i>'
+            
+            axios.get(`${backendUrl}/game/${gameid}/platform/${platformname}`)
+                .then((response) => {
+                    if (!response.data) {
+                        return Promise.reject("Cannot get games");
+                    }
+                    $("#game-title").text(response.data.title)
+                    let platformDropdown = '';
+                    response.data.allplatforms.forEach(platform => {
+                        if (platform.platformname == response.data.platformname) {
+                            platformDropdown += `<li><a class="dropdown-item disabled">${platform.platformname}</a></li>`
+                        } else {
+                            platformDropdown += `<li><a class="dropdown-item" href="${'http://localhost:3001/game/'+response.data.gameid + '/' + platform.platformname}">${platform.platformname}</a></li>`
+                        }
+                    });
+                    let categoryHtml = '';
+                    console.log(response.data)
+                    for (i=0; i < response.data.catname.length; i++) {
+                        // uses tooltips
+                        categoryHtml += `
+                            <div class="catinfo">
+                                ${response.data.catname[i]}
+                                <span class="catdesc">${response.data.catdescription[i]}</span>
+                            </div>
+                        `
+                    }
+
+                    let gameInfo = `
+                    <img id="game-img" class="img-fluid col-8 border border-primary border-2" onerror="this.onerror = null; this.src='/images/game_icon.png';" src="${backendUrl}/game/${response.data.gameid}/image">
+                    <div class="col-4 row g-1">
+                        <h2 id="game-platform" class="col-12">Platform: ${response.data.platformname}</h2>
+                        <div class="dropdown col-12" id="game-platforms">
+                            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            View on other platforms
+                            </button>
+                            <ul class="dropdown-menu">
+                                ${platformDropdown}
+                            </ul>
+                        </div> 
+                        <div class="col-12">
+                            <h3 class="">Category</h3>
+                            ${categoryHtml}
+                        </div>
+                    </div>
+                    <div class="col-8">
+                        <h2 class="">Game Description</h2>
+                        <p>${response.data.description}</p>
+                        <p>Year released: ${response.data.year}</p>
+                    </div>
+                    <div class="col-4" id="game-price-info">
+                        <h2 id="game-price" class="col-12">Price: $${response.data.price.toFixed(2)}</h3>
+                    </div>
+                    `;
+                    $('#game-info').append(gameInfo);
+                    gameInfo = true;
+                    // get cart info
+                    if (token == null) {
+                        $('#game-price-info').append(`
+                            <a class="btn btn-primary" href="/login.html">Login to add to cart</a>
+                        `)
+                    } else {
+                        axios.get(`${backendUrl}/cart/game/${response.data.gameid}/${response.data.platformname}`, {
+                            headers: header
+                        })
+                            .then((response) => {
+                                if (response.data.own) {
+                                    $('#game-price-info').append(`<p>Game already Owned</p>`);
+                                } else if (response.data.cart) {
+                                    $('#game-price-info').append(`<div id="cart"><p id="cart-result-text"></p>${RemoveCartBtn}</div>`);
+                                } else {
+                                    $('#game-price-info').append(`<div id="cart"><p id="cart-result-text"></p>${AddCartBtn}</div>`);
+                                }
+                            })
+                    }
+                    // get reviews
+                    axios.get(`${backendUrl}/game/${gameid}/review`)
+                        .then((response) => {
+                            console.log(response)
+                            if (!response.data) {
+                                return Promise.reject("Cannot get games");
+                            }
+                            let gameReviewsHtml = ''
+                            
+                            if (token) {
+                                gameReviewsHtml += `
+                                    <div class="border-top border-3">
+                                        <form id="post-review">
+                                            <h2>Leave a review</h2>
+                                            <div class="rating"> Rating: 
+                                                <input type="radio" id="star1" name="rating" value="1" checked/><label for="star1"><i class="fa fa-star text-warning"></i></label>
+                                                <input type="radio" id="star2" name="rating" value="2" /><label for="star2"><i class="fa fa-star"></i></label>
+                                                <input type="radio" id="star3" name="rating" value="3" /><label for="star3"><i class="fa fa-star"></i></label>
+                                                <input type="radio" id="star4" name="rating" value="4" /><label for="star4"><i class="fa fa-star"></i></label>
+                                                <input type="radio" id="star5" name="rating" value="5" /><label for="star5"><i class="fa fa-star"></i></label>
+                                            </div>  
+                                            <div class="m-2">
+                                                <label class="form-label">Description:</label>
+                                                <textarea id="review-content" rows="4" cols="50" class="form-control" maxlength="500" required></textarea>
+                                            </div>  
+                                            <div class="text-center">
+                                                <p id="review-result" class="text-success"></p>
+                                                <button type="submit" class="btn btn-lg btn-primary mb-3" id="review-button">Post review</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                `
+                            } else {
+                                gameReviewsHtml += `
+                                    <div>
+                                        <a class="btn btn-primary" href="/login.html">Login to leave a review</a>
+                                    </div>
+                                `
+                            }
+                            gameReviewsHtml += `
+                                <div class="text-center border-top border-3">
+                                    <h1>Reviews</h1>
+                                    <p id="review-count">Showing ${response.data.length} reviews:</p>
+                                </div>
+                            `;
+                            // https://www.w3schools.com/howto/howto_css_star_rating.asp 
+
+                            response.data.forEach(review => {
+                                let rating = parseInt(review.rating)
+                                gameReviewsHtml += `
+                                    <div class="review col-12 col-md-6 row border">
+                                        <img class="col-4" src="${review.profile_pic_url}" onerror="this.onerror = null; this.src='/images/user_icon.png';" > 
+                                        <h4 class="text-left col-5">User: ${review.username}</h4>
+                                        <p class="col-4 text-right">Reviewed at: ${review.created_at.split(' ')[0]}</p>
+                                        <div class=" align-items-center col-12 text-center">Rating: ${filledStar.repeat(rating) + emptyStar.repeat(5 - rating)}</div>
+                                        <p>${review.content}</p>
+                                    </div>
+                                `
+                            });
+                            $('#game-review').append(gameReviewsHtml);
+                        })
+                        .catch((error) => {
+                            console.log(error);
+                            $('#game-review').append(`<h1>Reviews</h1><p class="text-danger">Cannot get reviews</p>`);
+                        })
+                })
+                .catch((error) => {
+                    console.log(error);
+                    if (gameInfo) {
+                        $('#game-price-info').append(`
+                            <p class="text-danger">Failed to get cart info</p>
+                        `);
+                    } else {
+                        $("#game-title").text("Error")
+                        $('#game-info').append(`
+                            <p>Game cannot be found</p>
+                            <a href="/">Return to home page</a>
+                            <a href="/search.html">Find more games</a>
+                        `);
+                    }
+                })
+
+            // add to cart
+            $(document).on('click', '#cart-add', (event) => {
+                event.preventDefault();
+                let addCartData = {
+                    gameid : gameid,
+                    platformname: platformname
+                }
+                axios.post(`${backendUrl}/cart/game`, addCartData, {headers: header})
+                    .then((response) => {
+                        if (!response.data) {
+                            return Promise.reject("Cannot get games");
+                        }                           
+                        $('#cart-add').remove();
+                        $('#cart').append(RemoveCartBtn);
+                        $('#cart-result-text').addClass('text-success').removeClass('text-danger').text('Added successfully');
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        $('#cart-result-text').text("Failed to update cart").removeClass('text-success').addClass('text-danger');
+                    })
+            })
+            // remove from cart
+            $(document).on('click', '#cart-remove', () => {
+                event.preventDefault();
+                let removeCartData = {
+                    gameid : gameid,
+                    platformname: platformname
+                }
+                axios.delete(`${backendUrl}/cart/game`, {
+                    data: removeCartData, 
+                    headers: header
+                })
+                    .then((response) => {                          
+                        $('#cart-remove').remove();
+                        $('#cart').append(AddCartBtn);
+                        $('#cart-result-text').addClass('text-success').removeClass('text-danger').text('Removed successfully');
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        $('#cart-result-text').text("Failed to update cart").removeClass('text-success').addClass('text-danger');
+                    })
+            })
+            // post review
+            $(document).on('click', '#review-button', () => {
+                event.preventDefault();
+                if (hasInvalidInput("#post-review")) {
+                    return;
+                }
+                let review = {
+                    rating : $("input[name='rating']:checked").val(),
+                    content: $("#review-content").val()
+                }
+                let postedReview = false
+                axios.post(`${backendUrl}/game/${gameid}/review`, review, {headers: header})
+                    .then((response) => {
+                        if (!response.data) {
+                            return Promise.reject("Cannot get games");
+                        }
+                        postedReview = true;
+                        $('#review-result').text("Review posted");
+                        console.log(response.data.reviewid)
+                        return axios.get(`${backendUrl}/game/review/${response.data.reviewid}`)
+                    })
+                    .then((response) => {
+                        if (!response.data) {
+                            return Promise.reject("Cannot get games");
+                        }
+                        let review = response.data
+                        console.log(review)
+                        $('#game-review').append(`
+                            <div class="review col-12 col-md-6 row border">
+                                <img class="col-4" src="${review.profile_pic_url}" onerror="this.onerror = null; this.src='/images/user_icon.png';" > 
+                                <h4 class="text-left col-5">User: ${review.username}</h4>
+                                <p class="col-4 text-right">Reviewed at: ${review.created_at.split(' ')[0]}</p>
+                                <div class=" align-items-center col-12 text-center">Rating: ${filledStar.repeat(review.rating) + emptyStar.repeat(5 - review.rating)}</div>
+                                <p>${review.content}</p>
+                            </div>`);
+                        let reviewCount = parseInt($('#review-count').text().split(' ')[1])
+                        $('#review-count').text(`Showing ${reviewCount+1} reviews:`)
+                    })
+                    .catch((error) => {
+                        console.log(error)
+                        if (!postedReview) {
+                            $('#review-result').text("Failed to post review").addClass('text-danger');
+                        }
+                    })
+            })
+
+            // make rating buttons work
+            $(document).on('change', "input[name='rating']", (event) => {
+                $("input[name='rating'] + label i").removeClass('text-warning')
+                let selectedValue = event.currentTarget.value
+                for (i=1; i <= selectedValue; i++) {
+                    $(`input[name='rating'][value="${i}"] + label i`).addClass('text-warning')
+                }
+            })
+        })
+    </script>
+    <script src="/scripts/nav.js"></script>
+    <script src="/scripts/logout.js"></script>
+</body>
+</html>

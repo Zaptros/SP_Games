@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>SP Games</title>
+    <link rel="icon" href="/images/game_icon_small.png">
+
+    <!-- load bootstrap css -->
+    <!-- https://getbootstrap.com/docs/5.3/getting-started/download/ -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+
+    <link href="./stylesheets/general.css" rel="stylesheet">
+    <link href="./stylesheets/search.css" rel="stylesheet">
+
+</head>
+<body data-bs-theme="dark"> <!-- for dark mode -->
+    <nav class="navbar navbar-expand-lg bg-dark p-2 bg-gradient" id="nav">
+    </nav>
+    <div class="container bg-dark">
+        <div id="form" class="p-4 border border-primary"> 
+            <h1 class="h3 text-center">Search Games</h1>
+            <form id="login">
+                <div class="row p-2">
+                    <div class="col-6">
+                        <label for="title" class="m-2">Title</label>
+                        <input type="text" class="form-control shadow-none" id="title">
+                    </div>
+                    <div class="col-3">
+                        <label for="platform" class="m-2">Platform</label>
+                        <select class="form-select" aria-label="Default select example" id="platform">
+                            <option value="" selected>Any</option>
+                        </select>
+                    </div>
+                    <div class="col-3">
+                        <label for="platform" class="m-2">Sort</label>
+                        <select class="form-select" aria-label="Default select example" id="sort">
+                            <option value="Title Asc" selected>Title (A-Z)</option>
+                            <option value="Title Desc">Title (Z-A)</option>
+                            <option value="Price Asc">Price (Lowest-Highest)</option>
+                            <option value="Price Desc">Price (Highest-Lowest)</option>
+                            <option value="Platform Asc">Platform (A-Z)</option>
+                            <option value="Platform Desc">Platform (Z-A)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="text-center p-2">
+                    <button type="submit" class="btn btn-block btn-primary" id="search-button">Search Game</button>
+                </div>
+                <p class="text-danger text-center m-2" id="searc-result-text"></p>
+            </form>
+        </div>    
+
+        <div class="row g-3" id="search-results">
+            <!-- put games in here -->
+        </div>
+    </div>    
+
+    <!-- jquery -->
+    <!-- https://releases.jquery.com/ -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <!-- ajax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js" integrity="sha512-uMtXmF28A2Ab/JJO2t/vYhlaa/3ahUOgj1Zf27M5rOo8/+fcTUVH0/E0ll68njmjrLqOBjXM3V9NiPFL5ywWPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- own scripts  -->
+    <script>
+        $(document).ready(() => {
+            axios.get("http://localhost:8081/platform")
+                .then((response) => {
+                    let platformDropdown = ''
+                    response.data.forEach((item) => {
+                        platformDropdown += `<option value="${item.platformname}">${item.platformname}</option>`
+                    });
+                    $("#platform").append(platformDropdown)
+                })
+                .catch((error) => {
+                    console.log(error)
+                })
+                
+            $("#search-button").click((event) => {
+                $("#search-results").text('')
+                $("#searc-result-text").text('');
+                event.preventDefault();
+
+                let params = {
+                    title: $("#title").val(),
+                    platform: $("#platform").val(),
+                    sort: $("#sort").val()
+                }
+                axios.get("http://localhost:8081/search/game", {params: params})
+                    .then((response) => {
+                        if (!response.data) {
+                            return Promise.reject("Cannot get games");
+                        }
+                        let gameHtml = '';
+                        
+                        response.data.forEach(game => {
+                            let gamePage = '/game/' + game.gameid + '/' + game.platform;
+                            gameHtml += `
+                                <div class="p-2 col-lg-4 col-md-6 col-sm-12 border bg-body-secondary">
+                                    <a href="${gamePage}"><img src="http://localhost:8081/game/${game.gameid}/image" onerror="this.onerror = null; this.src='/images/game_icon.png';"  class="img-fluid float-start bg-dark"></a>
+                                    <div class="p-2 d-flex flex-row flex-wrap justify-content-between game-info">
+                                        <a href="${gamePage}" class="h3 w-100 text-center">${game.title}</a>
+                                        <p class="w-50">Platform: ${game.platform}</p>
+                                        <p class="w-50 text-end">Price: $${game.price}</p>
+                                        <p>Category: ${game.catname}</p>
+                                    </div>   
+                                </div>
+                            `
+                        });
+                        $("#search-results").append(gameHtml)
+                    })
+                    .catch((error) => {
+                        console.log(error)
+                        try {
+                            $("#searc-result-text").text(error.response.data.message);
+                        } catch { // if err is not from response
+                            $("#searc-result-text").text("Cannot get games");
+                        }
+                    })
+            })
+        })
+    </script>
+    <script src="./scripts/nav.js"></script>
+    <script src="./scripts/logout.js"></script>
+</body>
+</html>
